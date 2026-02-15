@@ -8,12 +8,13 @@ app.use(cors());
 app.use(express.json());
 
 // --- CONFIGURATION ---
+// The API URL for the 3rd Party Gateway
 const GATEWAY_URL = "https://api.sms-gate.app/3rdparty/v1/message";
 
-// --- CREDENTIALS FROM YOUR SCREENSHOT ---
-const DEVICE_ID = process.env.DEVICE_ID || "mXMCdKS4TTIPwNoAcMVBz";
+// --- CREDENTIALS ---
+const API_USERNAME = process.env.USERNAME || "7THBJ9"; 
 const API_PASSWORD = process.env.TOKEN || "tk35bteldznl0x";
-const API_USERNAME = process.env.USERNAME || "7THBJ9"; // Added this!
+const DEVICE_ID = process.env.DEVICE_ID || "mXMCdKS4TTIPwNoAcMVBz";
 
 let otpStore = {};
 
@@ -49,19 +50,19 @@ app.post('/send-otp', async (req, res) => {
     try {
         console.log(`Sending to: ${phoneNumber}`);
         
-        // --- UPDATED REQUEST ---
-        // We now send username/password inside the body (Standard for this Gateway)
+        // --- UPDATED AUTHENTICATION ---
+        // We use 'auth' to send the Username and Password as a secure header
         const response = await axios.post(GATEWAY_URL, {
-            username: API_USERNAME,    // The missing piece!
-            password: API_PASSWORD,    // Your app password
-            device: DEVICE_ID,         // Changed parameter name to 'device' (common for this API)
             phone: phoneNumber,
-            message: `Your Login Code: ${otp}`
+            message: `Your Login Code: ${otp}`,
+            device: DEVICE_ID 
         }, {
-            headers: { 
-                'Content-Type': 'application/json' 
-                // Removed 'Authorization' header because we are sending creds in body now
-            }
+            // This is the Magic Fix for "401 Unauthorized"
+            auth: {
+                username: API_USERNAME,
+                password: API_PASSWORD
+            },
+            headers: { 'Content-Type': 'application/json' }
         });
         
         console.log("Gateway Success:", response.data);
@@ -71,7 +72,7 @@ app.post('/send-otp', async (req, res) => {
         console.error("Gateway Failed!");
         if (err.response) {
             console.error("Status:", err.response.status);
-            console.error("Data:", err.response.data);
+            console.error("Data:", JSON.stringify(err.response.data));
         } else {
             console.error("Error:", err.message);
         }
