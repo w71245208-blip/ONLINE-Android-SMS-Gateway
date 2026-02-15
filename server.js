@@ -33,12 +33,22 @@ app.post('/send-otp', async (req, res) => {
     if (!phoneNumber) return res.status(400).json({ success: false, message: "Phone required" });
 
     // --- AUTO-FIX PHONE NUMBER ---
+    // Remove all non-numbers (spaces, dashes, parens)
     phoneNumber = phoneNumber.replace(/\D/g, ''); 
+    
+    // If it's a 10-digit Indian number, add +91
     if (phoneNumber.length === 10) {
-        phoneNumber = '91' + phoneNumber;
+        phoneNumber = '+91' + phoneNumber;
+    } 
+    // If it's 12 digits (91...), add the +
+    else if (phoneNumber.length === 12 && phoneNumber.startsWith('91')) {
+        phoneNumber = '+' + phoneNumber;
     }
 
     const otp = Math.floor(1000 + Math.random() * 9000);
+    
+    // Store OTP (We strip the + for easier storage lookup if needed, or store as is)
+    // Let's store exactly what we send to be consistent
     otpStore[phoneNumber] = otp;
 
     // Auto-delete OTP after 5 minutes
@@ -49,10 +59,8 @@ app.post('/send-otp', async (req, res) => {
     try {
         console.log(`Sending to: ${phoneNumber}`);
         
-        // --- FINAL FIX: FORMATTING ---
-        // The API requires 'phoneNumbers' to be an ARRAY (List), not a single string.
         const response = await axios.post(GATEWAY_URL, {
-            phoneNumbers: [phoneNumber], // <--- This is what the error was asking for!
+            phoneNumbers: [phoneNumber], // Now sends ["+919525372021"]
             message: `Your Login Code: ${otp}`,
             device: DEVICE_ID 
         }, {
@@ -81,8 +89,13 @@ app.post('/send-otp', async (req, res) => {
 app.post('/verify-otp', (req, res) => {
     let { phoneNumber, code } = req.body;
     
+    // Normalize user input to match the stored format
     phoneNumber = phoneNumber.replace(/\D/g, '');
-    if (phoneNumber.length === 10) phoneNumber = '91' + phoneNumber;
+    if (phoneNumber.length === 10) {
+        phoneNumber = '+91' + phoneNumber;
+    } else if (phoneNumber.length === 12 && phoneNumber.startsWith('91')) {
+        phoneNumber = '+' + phoneNumber;
+    }
 
     if (otpStore[phoneNumber] && parseInt(code) === otpStore[phoneNumber]) {
         delete otpStore[phoneNumber];
