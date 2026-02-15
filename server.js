@@ -8,7 +8,6 @@ app.use(cors());
 app.use(express.json());
 
 // --- CONFIGURATION ---
-// The API URL for the 3rd Party Gateway
 const GATEWAY_URL = "https://api.sms-gate.app/3rdparty/v1/message";
 
 // --- CREDENTIALS ---
@@ -50,14 +49,13 @@ app.post('/send-otp', async (req, res) => {
     try {
         console.log(`Sending to: ${phoneNumber}`);
         
-        // --- UPDATED AUTHENTICATION ---
-        // We use 'auth' to send the Username and Password as a secure header
+        // --- FINAL FIX: FORMATTING ---
+        // The API requires 'phoneNumbers' to be an ARRAY (List), not a single string.
         const response = await axios.post(GATEWAY_URL, {
-            phone: phoneNumber,
+            phoneNumbers: [phoneNumber], // <--- This is what the error was asking for!
             message: `Your Login Code: ${otp}`,
             device: DEVICE_ID 
         }, {
-            // This is the Magic Fix for "401 Unauthorized"
             auth: {
                 username: API_USERNAME,
                 password: API_PASSWORD
