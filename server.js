@@ -8,12 +8,12 @@ app.use(cors());
 app.use(express.json());
 
 // --- CONFIGURATION ---
-// Standard URL for the app in your screenshot
 const GATEWAY_URL = "https://api.sms-gate.app/3rdparty/v1/message";
 
-// Use Render Environment Variables
+// --- CREDENTIALS FROM YOUR SCREENSHOT ---
 const DEVICE_ID = process.env.DEVICE_ID || "mXMCdKS4TTIPwNoAcMVBz";
-const TOKEN = process.env.TOKEN || "tk35bteldznl0x";
+const API_PASSWORD = process.env.TOKEN || "tk35bteldznl0x";
+const API_USERNAME = process.env.USERNAME || "7THBJ9"; // Added this!
 
 let otpStore = {};
 
@@ -33,9 +33,7 @@ app.post('/send-otp', async (req, res) => {
     if (!phoneNumber) return res.status(400).json({ success: false, message: "Phone required" });
 
     // --- AUTO-FIX PHONE NUMBER ---
-    // 1. Remove non-numbers
     phoneNumber = phoneNumber.replace(/\D/g, ''); 
-    // 2. Add country code if missing (assuming 10 digit numbers are Indian)
     if (phoneNumber.length === 10) {
         phoneNumber = '91' + phoneNumber;
     }
@@ -49,19 +47,20 @@ app.post('/send-otp', async (req, res) => {
     }, 5 * 60 * 1000);
 
     try {
-        console.log(`Sending OTP to: ${phoneNumber}`);
-        console.log(`Using Device ID: ${DEVICE_ID}`);
+        console.log(`Sending to: ${phoneNumber}`);
         
-        // SMS Gateway Request
-        // We use 'device_id' and 'phone' to match your Android App's requirements
+        // --- UPDATED REQUEST ---
+        // We now send username/password inside the body (Standard for this Gateway)
         const response = await axios.post(GATEWAY_URL, {
-            phone: phoneNumber, 
-            message: `Your Login Code: ${otp}`,
-            device_id: DEVICE_ID
+            username: API_USERNAME,    // The missing piece!
+            password: API_PASSWORD,    // Your app password
+            device: DEVICE_ID,         // Changed parameter name to 'device' (common for this API)
+            phone: phoneNumber,
+            message: `Your Login Code: ${otp}`
         }, {
             headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${TOKEN}` 
+                'Content-Type': 'application/json' 
+                // Removed 'Authorization' header because we are sending creds in body now
             }
         });
         
@@ -69,26 +68,20 @@ app.post('/send-otp', async (req, res) => {
         res.json({ success: true });
 
     } catch (err) {
-        // DETAILED ERROR LOGGING
-        console.error("--- SMS GATEWAY ERROR ---");
+        console.error("Gateway Failed!");
         if (err.response) {
-            // The gateway responded, but with an error (e.g., 404, 401)
-            console.error("Status Code:", err.response.status);
-            console.error("Error Data:", JSON.stringify(err.response.data));
+            console.error("Status:", err.response.status);
+            console.error("Data:", err.response.data);
         } else {
-            // Network error (server unreachable)
-            console.error("Connection Error:", err.message);
+            console.error("Error:", err.message);
         }
-        console.error("-------------------------");
-        
-        res.status(500).json({ success: false, message: "Failed to send SMS. See logs." });
+        res.status(500).json({ success: false, message: "Failed to send SMS." });
     }
 });
 
 app.post('/verify-otp', (req, res) => {
     let { phoneNumber, code } = req.body;
     
-    // Normalize phone number exactly like we did in send-otp
     phoneNumber = phoneNumber.replace(/\D/g, '');
     if (phoneNumber.length === 10) phoneNumber = '91' + phoneNumber;
 
