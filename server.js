@@ -8,10 +8,10 @@ app.use(cors());
 app.use(express.json());
 
 // --- CONFIGURATION ---
-// We will try the standard singular URL.
+// Standard URL for the app in your screenshot
 const GATEWAY_URL = "https://api.sms-gate.app/3rdparty/v1/message";
 
-// Render will use these variables from your settings
+// Use Render Environment Variables
 const DEVICE_ID = process.env.DEVICE_ID || "mXMCdKS4TTIPwNoAcMVBz";
 const TOKEN = process.env.TOKEN || "tk35bteldznl0x";
 
@@ -33,8 +33,9 @@ app.post('/send-otp', async (req, res) => {
     if (!phoneNumber) return res.status(400).json({ success: false, message: "Phone required" });
 
     // --- AUTO-FIX PHONE NUMBER ---
-    // Remove spaces/dashes. If length is 10, add 91.
+    // 1. Remove non-numbers
     phoneNumber = phoneNumber.replace(/\D/g, ''); 
+    // 2. Add country code if missing (assuming 10 digit numbers are Indian)
     if (phoneNumber.length === 10) {
         phoneNumber = '91' + phoneNumber;
     }
@@ -48,10 +49,11 @@ app.post('/send-otp', async (req, res) => {
     }, 5 * 60 * 1000);
 
     try {
-        console.log(`Sending to: ${phoneNumber}`);
+        console.log(`Sending OTP to: ${phoneNumber}`);
+        console.log(`Using Device ID: ${DEVICE_ID}`);
         
         // SMS Gateway Request
-        // Note: We use 'phone' and 'device_id' (snake_case) to match standard APIs
+        // We use 'device_id' and 'phone' to match your Android App's requirements
         const response = await axios.post(GATEWAY_URL, {
             phone: phoneNumber, 
             message: `Your Login Code: ${otp}`,
@@ -67,22 +69,26 @@ app.post('/send-otp', async (req, res) => {
         res.json({ success: true });
 
     } catch (err) {
-        console.error("Gateway Failed!");
-        // Log the full error to see what's wrong
+        // DETAILED ERROR LOGGING
+        console.error("--- SMS GATEWAY ERROR ---");
         if (err.response) {
-            console.error("Status:", err.response.status);
-            console.error("Data:", err.response.data);
+            // The gateway responded, but with an error (e.g., 404, 401)
+            console.error("Status Code:", err.response.status);
+            console.error("Error Data:", JSON.stringify(err.response.data));
         } else {
-            console.error("Error:", err.message);
+            // Network error (server unreachable)
+            console.error("Connection Error:", err.message);
         }
-        res.status(500).json({ success: false, message: "Failed to send SMS." });
+        console.error("-------------------------");
+        
+        res.status(500).json({ success: false, message: "Failed to send SMS. See logs." });
     }
 });
 
 app.post('/verify-otp', (req, res) => {
     let { phoneNumber, code } = req.body;
     
-    // Clean phone number to match the one we stored
+    // Normalize phone number exactly like we did in send-otp
     phoneNumber = phoneNumber.replace(/\D/g, '');
     if (phoneNumber.length === 10) phoneNumber = '91' + phoneNumber;
 
