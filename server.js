@@ -8,8 +8,8 @@ app.use(cors());
 app.use(express.json());
 
 // --- CONFIGURATION ---
-// FIXED URL: It must be 'messages' (plural), not 'message'
-const GATEWAY_URL = "https://api.sms-gate.app/3rdparty/v1/messages";
+// We will try the standard singular URL.
+const GATEWAY_URL = "https://api.sms-gate.app/3rdparty/v1/message";
 
 // Render will use these variables from your settings
 const DEVICE_ID = process.env.DEVICE_ID || "mXMCdKS4TTIPwNoAcMVBz";
@@ -51,10 +51,11 @@ app.post('/send-otp', async (req, res) => {
         console.log(`Sending to: ${phoneNumber}`);
         
         // SMS Gateway Request
+        // Note: We use 'phone' and 'device_id' (snake_case) to match standard APIs
         const response = await axios.post(GATEWAY_URL, {
-            phoneNumbers: [phoneNumber], // API requires an array called 'phoneNumbers'
+            phone: phoneNumber, 
             message: `Your Login Code: ${otp}`,
-            deviceId: DEVICE_ID
+            device_id: DEVICE_ID
         }, {
             headers: { 
                 'Content-Type': 'application/json',
