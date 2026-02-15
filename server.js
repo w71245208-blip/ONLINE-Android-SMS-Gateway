@@ -50,6 +50,7 @@ app.post('/send-otp', async (req, res) => {
     try {
         console.log(`Sending to: ${phoneNumber}`);
         
+        // SMS Gateway Request
         const response = await axios.post(GATEWAY_URL, {
             phoneNumbers: [phoneNumber], // API requires an array called 'phoneNumbers'
             message: `Your Login Code: ${otp}`,
