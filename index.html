@@ -41,7 +41,7 @@
                 document.getElementById('step1').classList.add('hidden');
                 document.getElementById('step2').classList.remove('hidden');
                 document.getElementById('title').innerText = "Enter Code";
-                msg.innerText = "SMS sent to your phone!";
+                msg.innerText = "SMS sent!";
             } else {
                 msg.innerText = "Error: " + data.message;
             }
@@ -60,7 +60,7 @@
                 alert("Login Success! ✅");
                 location.reload();
             } else {
-                document.getElementById('msg').innerText = "Invalid code. Please try again.";
+                document.getElementById('msg').innerText = "Invalid code.";
             }
         }
     </script>
