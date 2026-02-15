@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Secure OTP Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body { font-family: sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .card { background: #1e293b; padding: 2.5rem; border-radius: 20px; width: 320px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); }
+        input { width: 100%; padding: 14px; margin: 12px 0; border-radius: 10px; border: 1px solid #334155; background: #0f172a; color: white; box-sizing: border-box; text-align: center; font-size: 1.1rem; }
+        button { width: 100%; padding: 14px; border-radius: 10px; border: none; background: #10b981; color: white; font-weight: bold; cursor: pointer; font-size: 1rem; }
+        .hidden { display: none; }
+        #msg { margin-top: 15px; font-size: 0.9rem; color: #94a3b8; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2 id="title">Login</h2>
+        <div id="step1">
+            <input type="text" id="phone" placeholder="9525372021"> <button onclick="send()">Send Code</button>
+        </div>
+        <div id="step2" class="hidden">
+            <input type="text" id="code" placeholder="0000">
+            <button onclick="verify()">Verify & Login</button>
+        </div>
+        <p id="msg"></p>
+    </div>
+
+    <script>
+        async function send() {
+            const phone = document.getElementById('phone').value;
+            const msg = document.getElementById('msg');
+            msg.innerText = "Sending...";
+            
+            const res = await fetch('/send-otp', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ phoneNumber: phone })
+            });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('step1').classList.add('hidden');
+                document.getElementById('step2').classList.remove('hidden');
+                document.getElementById('title').innerText = "Enter Code";
+                msg.innerText = "SMS sent to your phone!";
+            } else {
+                msg.innerText = "Error: " + data.message;
+            }
+        }
+
+        async function verify() {
+            const code = document.getElementById('code').value;
+            const phone = document.getElementById('phone').value;
+            const res = await fetch('/verify-otp', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ phoneNumber: phone, code: code })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert("Login Success! ✅");
+                location.reload();
+            } else {
+                document.getElementById('msg').innerText = "Invalid code. Please try again.";
+            }
+        }
+    </script>
+</body>
+</html>
