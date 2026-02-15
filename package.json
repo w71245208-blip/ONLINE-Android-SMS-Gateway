@@ -1,8 +1,11 @@
 {
-  "name": "otp-full-combo",
+  "name": "otp-render-optimized",
   "version": "1.0.0",
-  "description": "Full OTP system with SMS Gateway",
+  "description": "Optimized OTP system for Render Free Tier",
   "main": "server.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "scripts": {
     "start": "node server.js"
   },
